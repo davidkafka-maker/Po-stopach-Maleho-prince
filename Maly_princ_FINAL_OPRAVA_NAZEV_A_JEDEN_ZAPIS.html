@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Malý princ – čtenářská zkouška</title>
+<style>
+:root{
+  --bg1:#1b2340; --bg2:#0d1021; --card:#fffaf0; --accent:#f4c542; --accent2:#64d2ff;
+  --ok:#26b36a; --bad:#d94f4f; --text:#1b1b1b;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at top,#354270 0%,var(--bg1) 35%,var(--bg2) 100%);min-height:100vh;color:white;display:flex;align-items:center;justify-content:center;padding:18px;}
+.app{width:min(980px,100%);}
+.card{background:rgba(255,250,240,.97);color:var(--text);border-radius:24px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.4);border:3px solid rgba(244,197,66,.7);}
+h1{margin:0 0 10px;text-align:center;font-size:clamp(28px,5vw,46px);letter-spacing:.5px;color:#1f2c54;}
+.subtitle{text-align:center;margin:0 0 24px;color:#555;font-size:18px;}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:18px 0;}
+input{font-size:20px;padding:14px 16px;border-radius:14px;border:2px solid #c9c0a5;min-width:230px;background:white;}
+button{border:0;border-radius:16px;padding:14px 20px;font-size:20px;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,var(--accent),#ffdf77);color:#1f2c54;box-shadow:0 5px 0 #b08a15;transition:.08s;}
+button:active{transform:translateY(3px);box-shadow:0 2px 0 #b08a15;}
+button:disabled{opacity:.55;cursor:not-allowed;box-shadow:none;transform:none;}
+.menu-actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
+.linkbtn{display:inline-block;text-decoration:none;border:0;border-radius:16px;padding:14px 20px;font-size:20px;font-weight:bold;cursor:pointer;background:linear-gradient(135deg,var(--accent2),#d8f4ff);color:#1f2c54;box-shadow:0 5px 0 #29718a;transition:.08s;}
+.linkbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #29718a;}
+.hidden{display:none!important;}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.badge{background:#1f2c54;color:white;border-radius:999px;padding:10px 16px;font-weight:bold;}
+.timer{font-size:26px;background:#7d1d2c;color:white;border-radius:16px;padding:10px 18px;font-weight:bold;min-width:78px;text-align:center;}
+.timer.warn{animation:pulse .55s infinite alternate;background:#c81e1e;}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.06)}}
+.question{font-size:clamp(22px,3vw,31px);font-weight:bold;line-height:1.28;margin:18px 0 18px;color:#162447;}
+.answers{display:grid;grid-template-columns:1fr;gap:12px;}
+.answer{width:100%;text-align:left;background:white;color:#162447;border:2px solid #d8cfb9;box-shadow:none;padding:15px 18px;border-radius:16px;font-weight:normal;font-size:20px;}
+@media (hover:hover) and (pointer:fine){
+  .answer:hover:not(:disabled){border-color:#1f2c54;background:#f7fbff;}
+}
+.answer:focus,
+.answer:active{outline:none;transform:none;}
+.answer{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.answer:disabled{opacity:1;filter:none;}
+.answer.correct{background:#dff6e9;border-color:var(--ok);color:#0c6b3d;font-weight:bold;}
+.answer.wrong{background:#ffe1e1;border-color:var(--bad);color:#9a1c1c;font-weight:bold;}
+.feedback{text-align:center;font-weight:bold;font-size:28px;min-height:42px;margin-top:16px;}
+.feedback.ok{color:var(--ok)} .feedback.bad{color:var(--bad)}
+.result{text-align:center;}
+.result .status{font-size:clamp(44px,8vw,78px);font-weight:900;margin:12px 0;}
+.status.pass{color:var(--ok)} .status.fail{color:var(--bad)}
+.note{font-size:16px;color:#555;text-align:center;margin-top:16px;}
+.small{font-size:15px;color:#666;line-height:1.4;}
+.blockedMessage{background:#ffe1e1;border:2px solid var(--bad);color:#8d1111;border-radius:16px;padding:16px;margin-top:16px;font-size:20px;font-weight:bold;text-align:center;}
+.checkingMessage{color:#1f2c54;font-weight:bold;text-align:center;margin-top:16px;font-size:17px;}
+.cheat{background:#ffe1e1;border:2px solid var(--bad);color:#8d1111;border-radius:16px;padding:16px;margin-top:14px;font-weight:bold;text-align:center;}
+body.alarm{animation:alarmFlash .18s alternate 10;}
+@keyframes alarmFlash{from{filter:none}to{filter:brightness(1.35) contrast(1.15)}}
+.card.shake{animation:shake .35s linear 2;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section id="start" class="card">
+    <h1>Malý princ</h1>
+    <p class="subtitle">Čtenářská zkouška – 20 náhodných otázek</p>
+    <div class="row">
+      <input id="surname" autocomplete="off" placeholder="Příjmení" />
+      <input id="className" autocomplete="off" placeholder="Třída" />
+    </div>
+    <div class="menu-actions">
+      <button id="startBtn" type="button">▶️ Začít test</button>
+      <a class="linkbtn" href="https://docs.google.com/spreadsheets/d/1_dtTEdaPKPPNqQvlmE_LKqeoZmWMQ9w7JfCWuKyD1EA/edit?usp=sharing" target="_blank" rel="noopener">📊 Výsledková tabulka</a>
+    </div>
+    <p id="startStatus" class="small"></p>
+    <p class="note">Na každou otázku je limit 25 sekund. K úspěchu je třeba alespoň 16 správných odpovědí.</p>
+    <p class="small">Během testu neopouštějte okno aplikace. Přepnutí jinam test ukončí jako neplatný pokus.</p>
+  </section>
+
+  <section id="quiz" class="card hidden">
+    <div class="topbar">
+      <div class="badge" id="counter">Otázka 1/20</div>
+      <div class="badge" id="score">Body: 0</div>
+      <div class="timer" id="timer">15</div>
+    </div>
+    <div class="question" id="question"></div>
+    <div class="answers" id="answers"></div>
+    <div class="feedback" id="feedback"></div>
+  </section>
+
+  <section id="end" class="card hidden result">
+    <h1>Výsledek</h1>
+    <div id="status" class="status"></div>
+    <p id="points" style="font-size:28px;font-weight:bold"></p>
+    <p id="sendInfo" class="note"></p>
+    <div class="menu-actions"><button id="menuBtn" type="button">🏠 MENU</button></div>
+  </section>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxn5Tb-0pvVDmjQeehPa6AgvwDE5TAXEwE7lxg95Ulo2Lbi1Bye7LF9IjP25wWgskMx/exec";
+const APP_NAME = "Po stopách Malého prince";
+const QUESTION_COUNT = 20;
+const TIME_LIMIT = 25;
+const PASS_LIMIT = 16;
+
+let audioCtx = null;
+function ensureAudio(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+}
+function tone(freq, duration, delay=0, type='sine', volume=0.55){
+  ensureAudio();
+  const now = audioCtx.currentTime + delay;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(now); osc.stop(now + duration + 0.03);
+}
+function soundOK(){ tone(660,.12,0,'triangle',0.5); tone(880,.15,.11,'triangle',0.55); tone(1175,.18,.23,'triangle',0.5); }
+function soundBad(){ tone(220,.22,0,'square',0.55); tone(165,.26,.18,'square',0.5); }
+function soundTimeout(){ tone(440,.11,0,'sawtooth',0.55); tone(330,.11,.13,'sawtooth',0.55); tone(220,.28,.26,'sawtooth',0.55); }
+function soundPass(){ [523,659,784,1047,1319].forEach((f,i)=>tone(f,.18,i*.12,'triangle',0.5)); }
+function soundFail(){ [392,330,262,196].forEach((f,i)=>tone(f,.24,i*.16,'sawtooth',0.5)); }
+function soundAlarm(){
+  document.body.classList.add('alarm');
+  const card=document.querySelector('.card:not(.hidden)'); if(card) card.classList.add('shake');
+  for(let i=0;i<10;i++){ tone(i%2?520:880,.12,i*.11,'square',0.65); }
+  setTimeout(()=>{document.body.classList.remove('alarm'); if(card) card.classList.remove('shake');},1300);
+}
+
+const QUESTIONS = [
+ {
+  "q": "Co ve skutečnosti zobrazovala první kresba vypravěče?",
+  "a": [
+   "Slona uvnitř kobry",
+   "Slona uvnitř krajty mřížkované",
+   "Slona uvnitř hroznýše",
+   "Slona uvnitř anakondy"
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jak dospělí vypravěčovu první kresbu nejčastěji interpretovali?",
+  "a": [
+   "Jako klobouk",
+   "Jako horu",
+   "Jako stan",
+   "Jako velblouda"
+  ],
+  "c": 0
+ },
+ {
+  "q": "Jaká byla první prosba Malého prince po setkání s vypravěčem?",
+  "a": [
+   "Dej mi napít.",
+   "Oprav mi letadlo.",
+   "Nakresli mi beránka.",
+   "Ukaž mi hvězdy."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Který nakreslený beránek se Malému princi nejvíce líbil?",
+  "a": [
+   "Nemocný beránek",
+   "Beránek s rohy",
+   "Beránek v bedýnce",
+   "Spící beránek"
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jak bývá označována planetka, z níž Malý princ pochází?",
+  "a": [
+   "B-612",
+   "B-621",
+   "A-612",
+   "A-621"
+  ],
+  "c": 0
+ },
+ {
+  "q": "Jaký problém představovaly na planetce baobaby?",
+  "a": [
+   "Přitahovaly jedovatý hmyz.",
+   "Mohly roztrhat planetu kořeny.",
+   "Zastiňovaly sopky.",
+   "Přitahovaly meteory."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Proč Malý princ pravidelně čistil i vyhaslou sopku?",
+  "a": [
+   "Protože mohla znovu vybuchnout.",
+   "Protože měl rád pořádek.",
+   "Protože v ní bydlela růže.",
+   "Protože mu to poradil zeměpisec."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Proč Malý princ dlouho považoval svou růži za výjimečnou?",
+  "a": [
+   "Byla jedinou růží na jeho planetě.",
+   "Domníval se, že je jedinou růží svého druhu na světě.",
+   "Byla jedinou květinou, která uměla mluvit.",
+   "Byla starší než ostatní růže."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Jakou věc si růže přála, aby se mohla chránit před průvanem?",
+  "a": [
+   "Paraván",
+   "Skleník",
+   "Plášť",
+   "Malý stan"
+  ],
+  "c": 0
+ },
+ {
+  "q": "Jak se růže při loučení zachovala nejvýrazněji?",
+  "a": [
+   "Vyčetla princi, že ji opouští.",
+   "Přiznala, že ho miluje, a snažila se nebýt směšná.",
+   "Odmítla s ním mluvit.",
+   "Požádala ho, aby ji vzal s sebou."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Kdo byl prvním obyvatelem planetky, kterou Malý princ navštívil po odchodu?",
+  "a": [
+   "Domýšlivec",
+   "Král",
+   "Pijan",
+   "Zeměpisec"
+  ],
+  "c": 1
+ },
+ {
+  "q": "Čím se králova vláda vyznačovala?",
+  "a": [
+   "Rozkazoval pouze to, co se stejně mohlo splnit.",
+   "Trestal každého návštěvníka.",
+   "Vládl jen pomocí vojáků.",
+   "Zakazoval západy slunce."
+  ],
+  "c": 0
+ },
+ {
+  "q": "Co si domýšlivec přál od každého návštěvníka?",
+  "a": [
+   "Dary",
+   "Potlesk a obdiv",
+   "Rady",
+   "Otázky"
+  ],
+  "c": 1
+ },
+ {
+  "q": "Jak pijan vysvětloval, proč pije?",
+  "a": [
+   "Aby zapomněl na smutek.",
+   "Aby oslavil život.",
+   "Aby zapomněl, že se stydí.",
+   "Protože je osamělý."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Za co se pijan styděl?",
+  "a": [
+   "Za svou samotu",
+   "Za to, že pije",
+   "Za svou chudobu",
+   "Za svou planetu"
+  ],
+  "c": 1
+ },
+ {
+  "q": "Co neustále dělal byznysmen?",
+  "a": [
+   "Počítal hvězdy.",
+   "Zapisoval planety.",
+   "Měřil vzdálenosti.",
+   "Vážil zlato."
+  ],
+  "c": 0
+ },
+ {
+  "q": "Co podle byznysmena znamenalo vlastnit hvězdy?",
+  "a": [
+   "Moci je navštěvovat.",
+   "Mít je zapsané a uložené v bance.",
+   "Ovládat jejich pohyb.",
+   "Vybírat z nich daně."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Proč lampář rozsvěcel a zhasínal lampu tak často?",
+  "a": [
+   "Byl zapomnětlivý.",
+   "Planetka se stále zrychlovala.",
+   "Dostal nový rozkaz.",
+   "Lampa byla porouchaná."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Kterou postavu Malý princ z navštívených planet hodnotil nejpříznivěji?",
+  "a": [
+   "Krále",
+   "Zeměpisce",
+   "Lampáře",
+   "Byznysmena"
+  ],
+  "c": 2
+ },
+ {
+  "q": "Proč zeměpisec sám necestoval?",
+  "a": [
+   "Byl příliš starý.",
+   "Neměl dopravní prostředek.",
+   "Geografové neprovádějí průzkum sami.",
+   "Bál se vesmíru."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Koho zeměpisec považoval za důležité pro získávání poznatků?",
+  "a": [
+   "Cestovatele a průzkumníky",
+   "Piloty a mechaniky",
+   "Astronomy a krále",
+   "Obchodníky a účetní"
+  ],
+  "c": 0
+ },
+ {
+  "q": "Co zeměpisec řekl o květinách?",
+  "a": [
+   "Jsou nesmrtelné.",
+   "Jsou pomíjivé.",
+   "Jsou nebezpečné.",
+   "Jsou vzácnější než hory."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Co pociťoval Malý princ vůči své růži po prožitém příběhu?",
+  "a": [
+   "Rozmrzelost, protože ho často trápila.",
+   "Lhostejnost, protože poznal mnoho jiných růží.",
+   "Odpovědnost a hlubokou náklonnost.",
+   "Obdiv především k její kráse."
+  ],
+  "c": 2
+ },
+ {
+  "q": "S kým se Malý princ na Zemi setkal jako s prvním živým tvorem?",
+  "a": [
+   "S liškou",
+   "S hadem",
+   "S květinou",
+   "S výhybkářem"
+  ],
+  "c": 1
+ },
+ {
+  "q": "Jak had popsal svou moc?",
+  "a": [
+   "Umí cestovat mezi světy.",
+   "Umí člověka učinit neviditelným.",
+   "Umí vrátit člověka tam, odkud přišel.",
+   "Umí splnit přání."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Kde rostla osamělá květina, s níž Malý princ mluvil na Zemi?",
+  "a": [
+   "Na louce",
+   "V poušti",
+   "Na vrcholu hory",
+   "U řeky"
+  ],
+  "c": 1
+ },
+ {
+  "q": "Jaký dojem měl Malý princ z vysoké hory?",
+  "a": [
+   "Že uvidí všechny lidi.",
+   "Že uslyší moudré rady.",
+   "Že Země je pustá a špičatá.",
+   "Že našel svou planetu."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Co Malého prince zarmoutilo v růžové zahradě?",
+  "a": [
+   "Že jeho růže pravděpodobně uvadla.",
+   "Že jeho růže není jediná svého druhu.",
+   "Že růže nemluví.",
+   "Že růže nemají vůni."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Jak liška vysvětlila pojem ‚ochočit‘?",
+  "a": [
+   "Naučit poslouchat.",
+   "Přinutit k přátelství.",
+   "Vytvořit pouta.",
+   "Chránit před nebezpečím."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Co měla liška spojené se zlatou barvou vlasů Malého prince?",
+  "a": [
+   "Hvězdy",
+   "Pšenici",
+   "Slunce",
+   "Květy růží"
+  ],
+  "c": 1
+ },
+ {
+  "q": "Jaké tajemství liška Malému princi nakonec prozradila?",
+  "a": [
+   "Člověk je sám mezi lidmi.",
+   "Správně vidíme jen srdcem.",
+   "Čas léčí vše.",
+   "Přátelství je silnější než smrt."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Koho Malý princ potkal po setkání s liškou?",
+  "a": [
+   "Výhybkáře a potom obchodníka",
+   "Astronoma a potom krále",
+   "Květinu a potom hada",
+   "Pilota a potom zeměpisce"
+  ],
+  "c": 0
+ },
+ {
+  "q": "Co ukazuje rozhovor s výhybkářem o lidech ve vlacích?",
+  "a": [
+   "Vědí přesně, kam míří.",
+   "Stále spěchají a často nevědí, co hledají.",
+   "Cestují jen za obchodem.",
+   "Touží především po samotě."
+  ],
+  "c": 1
+ },
+ {
+  "q": "K čemu měly sloužit pilulky obchodníka?",
+  "a": [
+   "Proti hladu",
+   "Proti únavě",
+   "Aby člověk nemusel pít",
+   "Aby člověk nemusel spát"
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jak by Malý princ naložil s časem ušetřeným díky pilulkám?",
+  "a": [
+   "Počítal by hvězdy.",
+   "Šel by pomalu ke studánce.",
+   "Spal by pod růží.",
+   "Čistil by sopky."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Co dává vodě ze studny podle vypravěče zvláštní hodnotu?",
+  "a": [
+   "Její léčivá síla.",
+   "To, že ji našli podle mapy.",
+   "Námaha, cesta, hvězdy a zvuk rumpálu.",
+   "To, že je poslední v poušti."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Proč se Malý princ chtěl vrátit právě v místě, kde se znovu setkal s hadem?",
+  "a": [
+   "Tam předtím přistál na Zemi.",
+   "Byla tam nejbližší studna.",
+   "Tam rostly růže.",
+   "Tam ho čekala liška."
+  ],
+  "c": 0
+ },
+ {
+  "q": "Co vypravěč po hadím uštknutí druhý den ráno nenašel?",
+  "a": [
+   "Tělo Malého prince",
+   "Hada",
+   "Kresbu beránka",
+   "Studnu"
+  ],
+  "c": 0
+ },
+ {
+  "q": "Proč vypravěč po návratu neměl úplný klid?",
+  "a": [
+   "Nevěděl, zda beránek nesežral růži.",
+   "Zapomněl opravit letadlo.",
+   "Ztratil kresbu hroznýše.",
+   "Nevěděl, kde je studna."
+  ],
+  "c": 0
+ },
+ {
+  "q": "Co vypravěče zneklidňovalo na kresbě náhubku pro beránka?",
+  "a": [
+   "Zapomněl k němu přikreslit řemínek.",
+   "Nakreslil jej příliš velký.",
+   "Nakreslil jej u špatného beránka.",
+   "Zapomněl ho dát do bedýnky."
+  ],
+  "c": 0
+ },
+ {
+  "q": "Co chtěl Malý princ po vypravěči nakreslit kromě beránka?",
+  "a": [
+   "Vodítko",
+   "Náhubek",
+   "Ohradu",
+   "Boudu"
+  ],
+  "c": 1
+ },
+ {
+  "q": "Co překvapovalo vypravěče na způsobu, jakým Malý princ kladl otázky?",
+  "a": [
+   "Často měnil téma.",
+   "Nikdy nečekal na odpověď.",
+   "Když se na něco zeptal, jen zřídka se své otázky vzdal.",
+   "Pokládal pouze otázky o hvězdách."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jak reagoval Malý princ, když se dozvěděl, že beránci jedí keře?",
+  "a": [
+   "Rozesmál se.",
+   "Nevěřil tomu.",
+   "Zaradoval se.",
+   "Rozzlobil se."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Co si Malý princ často dělal při pozorování západů slunce?",
+  "a": [
+   "Posouval židli.",
+   "Vylézal na strom.",
+   "Stoupal na sopku.",
+   "Používal dalekohled."
+  ],
+  "c": 0
+ },
+ {
+  "q": "Jak se růže zpočátku chovala vůči Malému princi?",
+  "a": [
+   "Skromně a nenápadně.",
+   "Hrdě a trochu rozmarně.",
+   "Chladně a mlčenlivě.",
+   "Přísně a nepřístupně."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Co růže tvrdila o tygrech?",
+  "a": [
+   "Že se jich bojí.",
+   "Že na její planetě nejsou.",
+   "Že ničí květiny.",
+   "Že loví beránky."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Jaký byl hlavní důvod, proč Malý princ opustil svou planetku?",
+  "a": [
+   "Chtěl poznat vesmír.",
+   "Pohádal se s růží.",
+   "Nerozuměl své růži.",
+   "Hrozily baobaby."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Co dělal král, když Malý princ zíval?",
+  "a": [
+   "Zakázal mu zívat.",
+   "Přikázal mu odpočívat.",
+   "Nařídil mu zívat.",
+   "Ignoroval ho."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jak domýšlivec reagoval na přítomnost Malého prince?",
+  "a": [
+   "Považoval ho za obdivovatele.",
+   "Považoval ho za soupeře.",
+   "Považoval ho za služebníka.",
+   "Považoval ho za podvodníka."
+  ],
+  "c": 0
+ },
+ {
+  "q": "Co měl byznysmen neustále po ruce?",
+  "a": [
+   "Dalekohled.",
+   "Kalkulačku.",
+   "Tužku a papír.",
+   "Mapu hvězd."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jaký dojem udělal lampář na Malého prince?",
+  "a": [
+   "Připadal mu směšný.",
+   "Připadal mu moudrý.",
+   "Připadal mu užitečný.",
+   "Připadal mu nebezpečný."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Proč zeměpisec nezapisoval květiny?",
+  "a": [
+   "Nepovažoval je za důležité.",
+   "Byly pomíjivé.",
+   "Nevěřil jejich existenci.",
+   "Neměl o nich informace."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Co odpověděla pouštní květina na otázku o lidech?",
+  "a": [
+   "Že jsou nebezpeční.",
+   "Že jich viděla mnoho.",
+   "Že jich existuje asi šest nebo sedm.",
+   "Že žijí jen ve městech."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Co vracela Malému princi ozvěna v horách?",
+  "a": [
+   "Jeho otázky.",
+   "Jeho přání.",
+   "Jeho vlastní slova.",
+   "Hlasy lidí."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jak Malý princ zpočátku reagoval na růžovou zahradu?",
+  "a": [
+   "Nadšeně.",
+   "S pocitem vítězství.",
+   "Smutně a zklamaně.",
+   "Lhostejně."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Co liška požadovala před ochočením?",
+  "a": [
+   "Jídlo.",
+   "Trpělivost a pravidelnost.",
+   "Dárek.",
+   "Přístřešek."
+  ],
+  "c": 1
+ },
+ {
+  "q": "Jaký zvyk doporučila liška při schůzkách?",
+  "a": [
+   "Přicházet stále ve stejnou dobu.",
+   "Přinášet květiny.",
+   "Chodit po dvojicích.",
+   "Mluvit co nejméně."
+  ],
+  "c": 0
+ },
+ {
+  "q": "Co podle lišky dává věcem hodnotu?",
+  "a": [
+   "Krása.",
+   "Vzácnost.",
+   "Čas, který jim věnujeme.",
+   "Užitečnost."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jak reagoval výhybkář na otázku, co lidé hledají?",
+  "a": [
+   "Že hledají bohatství.",
+   "Že hledají štěstí.",
+   "Že často sami nevědí.",
+   "Že hledají domov."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jaký názor měl Malý princ na pilulky šetřící čas?",
+  "a": [
+   "Považoval je za geniální.",
+   "Považoval je za nebezpečné.",
+   "Raději by šel pomalu ke studni.",
+   "Chtěl si je koupit."
+  ],
+  "c": 2
+ },
+ {
+  "q": "Jak autor zdůvodňuje, že knihu věnuje Léonu Werthovi?",
+  "a": [
+   "Protože mu pomohl vydat knihu.",
+   "Protože ho zachránil během války.",
+   "Protože je jeho nejlepším přítelem a trpí ve Francii hladem a zimou.",
+   "Protože mu vyprávěl příběh Malého prince."
+  ],
+  "c": 2
+ }
+];
+
+let selected=[], current=0, points=0, timer=null, timeLeft=TIME_LIMIT, locked=false, started=false, finished=false, invalid=false, resultSent=false;
+const $=id=>document.getElementById(id);
+
+function shuffle(arr){ return arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]); }
+function shuffleQuestion(item){
+  const mapped=item.a.map((text,i)=>({text, correct:i===item.c}));
+  const s=shuffle(mapped);
+  return {q:item.q, a:s.map(x=>x.text), c:s.findIndex(x=>x.correct)};
+}
+
+
+function checkApplicationStatus(){
+  return new Promise(resolve=>{
+    const callbackName='stavAplikaceCallback_'+Date.now()+'_'+Math.floor(Math.random()*100000);
+    const script=document.createElement('script');
+    let done=false;
+
+    function cleanup(){
+      try{ delete window[callbackName]; }catch(e){ window[callbackName]=undefined; }
+      if(script && script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[callbackName]=function(data){
+      if(done) return;
+      done=true; cleanup();
+      const stav=(data && data.stav ? String(data.stav) : 'SPUŠTĚNO').trim().toUpperCase();
+      resolve(stav);
+    };
+
+    script.onerror=function(){
+      if(done) return;
+      done=true; cleanup();
+      resolve('SPUŠTĚNO');
+    };
+
+    const sep=SCRIPT_URL.includes('?') ? '&' : '?';
+    script.src=SCRIPT_URL+sep+'action=status&callback='+encodeURIComponent(callbackName)+'&t='+Date.now();
+    document.body.appendChild(script);
+
+    setTimeout(()=>{
+      if(done) return;
+      done=true; cleanup();
+      resolve('SPUŠTĚNO');
+    },4500);
+  });
+}
+
+function showStartStatus(message,type){
+  const el=$('startStatus');
+  if(!el) return;
+  el.textContent=message || '';
+  el.className=type==='blocked' ? 'blockedMessage' : (type==='checking' ? 'checkingMessage' : 'small');
+}
+
+async function startQuiz(){
+  ensureAudio();
+  const surname=$('surname').value.trim(); const cls=$('className').value.trim();
+  if(!surname || !cls){ alert('Vyplňte prosím příjmení i třídu.'); return; }
+
+  const startBtn=$('startBtn');
+  if(startBtn) startBtn.disabled=true;
+  showStartStatus('Ověřuji, zda je aplikace spuštěna…','checking');
+
+  let stavAplikace='SPUŠTĚNO';
+  try{
+    stavAplikace=await checkApplicationStatus();
+  }catch(e){
+    stavAplikace='SPUŠTĚNO';
+  }
+
+  if(stavAplikace==='ZABLOKOVÁNO' || stavAplikace==='ZABLOKOVANO'){
+    showStartStatus('APLIKACI NELZE SPUSTIT – TEST JE DOČASNĚ ZABLOKOVÁN.','blocked');
+    if(startBtn) startBtn.disabled=false;
+    return;
+  }
+
+  showStartStatus('','');
+  if(startBtn) startBtn.disabled=false;
+
+  selected=shuffle(QUESTIONS).slice(0,QUESTION_COUNT).map(shuffleQuestion);
+  current=0; points=0; invalid=false; finished=false; started=true; resultSent=false;
+  $('start').classList.add('hidden'); $('quiz').classList.remove('hidden');
+  showQuestion();
+}
+
+function showQuestion(){
+  if(document.activeElement && typeof document.activeElement.blur === 'function'){
+    document.activeElement.blur();
+  }
+  locked=false; timeLeft=TIME_LIMIT;
+  $('counter').textContent=`Otázka ${current+1}/${QUESTION_COUNT}`;
+  $('score').textContent=`Body: ${points}`;
+  $('feedback').textContent=''; $('feedback').className='feedback';
+  $('timer').textContent=timeLeft; $('timer').classList.remove('warn');
+  const item=selected[current]; $('question').textContent=item.q; $('answers').innerHTML='';
+  item.a.forEach((ans,i)=>{ const b=document.createElement('button'); b.className='answer'; b.textContent=String.fromCharCode(65+i)+') '+ans; b.onclick=()=>answer(i,b); $('answers').appendChild(b); });
+  clearInterval(timer); timer=setInterval(tick,1000);
+}
+function tick(){
+  timeLeft--; $('timer').textContent=timeLeft; if(timeLeft<=5)$('timer').classList.add('warn');
+  if(timeLeft<=0){ clearInterval(timer); answer(-1,null); }
+}
+function answer(i,btn){
+  if(locked || finished) return; locked=true; clearInterval(timer);
+  const item=selected[current]; const buttons=[...document.querySelectorAll('.answer')]; buttons.forEach(b=>b.disabled=true);
+  if(i===item.c){ points++; soundOK(); if(btn)btn.classList.add('correct'); $('feedback').textContent='SPRÁVNĚ'; $('feedback').classList.add('ok'); }
+  else{ if(i<0) soundTimeout(); else soundBad(); if(btn)btn.classList.add('wrong'); if(buttons[item.c])buttons[item.c].classList.add('correct'); $('feedback').textContent=(i<0?'ČAS VYPRŠEL':'ŠPATNĚ'); $('feedback').classList.add('bad'); }
+  $('score').textContent=`Body: ${points}`;
+  setTimeout(()=>{ current++; if(current>=QUESTION_COUNT) finish(false); else showQuestion(); }, 1150);
+}
+function finish(isInvalid){
+  finished=true; started=false; clearInterval(timer); invalid=!!isInvalid;
+  $('quiz').classList.add('hidden'); $('end').classList.remove('hidden');
+  const passed=(!invalid && points>=PASS_LIMIT); const res=invalid?'NEUSPĚL':(passed?'USPĚL':'NEUSPĚL');
+  if(invalid) soundAlarm(); else if(passed) soundPass(); else soundFail();
+  $('status').textContent=res; $('status').className='status '+(passed?'pass':'fail');
+  $('points').textContent=`Body: ${points}/${QUESTION_COUNT}`;
+  $('sendInfo').textContent='Odesílám výsledek...';
+  sendResult(res);
+}
+function sendResult(result){
+  if(resultSent) return;
+  resultSent=true;
+  const data=new URLSearchParams();
+  data.append('aplikace', APP_NAME);
+  data.append('trida',$('className').value.trim());
+  data.append('prijmeni',$('surname').value.trim());
+  data.append('jmeno',$('surname').value.trim());
+  data.append('vysledek', invalid ? 'NEUSPĚL - PŘEKLIKNUTÍ' : result);
+  data.append('znamka', invalid ? 'NEUSPĚL - PŘEKLIKNUTÍ' : result);
+  data.append('body',String(points));
+  data.append('celkem',String(QUESTION_COUNT));
+  data.append('spravne',String(points));
+  data.append('spatne',String(QUESTION_COUNT - points));
+  data.append('rezim', invalid ? 'PŘEKLIKNUTÍ' : 'TEST');
+  data.append('poznamka',invalid?'přepnutí okna / neplatný pokus':'řádně dokončeno');
+  data.append('odeslano', new Date().toLocaleString('cs-CZ'));
+
+  if(!SCRIPT_URL || SCRIPT_URL.includes('SEM_VLOZTE')){
+    $('sendInfo').textContent='Výsledek nebyl odeslán – v HTML je nutné doplnit URL Apps Scriptu.';
+    return;
+  }
+
+  // Ověřená cesta z funkčních aplikací: skutečné formulářové odeslání do skrytého iframe.
+  // Nečekáme na odpověď Apps Scriptu, protože u nasazené webové aplikace bývá CORS nespolehlivé.
+  const iframeName = 'odesilaci_iframe';
+  let iframe = document.querySelector('iframe[name="' + iframeName + '"]');
+  if(!iframe){
+    iframe = document.createElement('iframe');
+    iframe.name = iframeName;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+  }
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = SCRIPT_URL;
+  form.target = iframeName;
+  form.style.display = 'none';
+
+  for (const [key, value] of data.entries()) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  }
+
+  document.body.appendChild(form);
+  form.submit();
+  $('sendInfo').textContent = 'Výsledek byl odeslán do tabulky.';
+  setTimeout(() => form.remove(), 1500);
+}
+
+document.getElementById('startBtn').addEventListener('click',startQuiz);
+document.getElementById('menuBtn').addEventListener('click',()=>location.reload());
+['surname','className'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')startQuiz();}));
+
+document.addEventListener('visibilitychange',()=>{ if(started && !finished && document.hidden){ finish(true); } });
+window.addEventListener('blur',()=>{ if(started && !finished){ setTimeout(()=>{ if(document.hidden || !document.hasFocus()) finish(true); },180); } });
+</script>
+</body>
+</html>
